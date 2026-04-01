@@ -31,7 +31,6 @@ PLACE_DETAILS_FIELDS = ",".join([
     "businessStatus",
     "location",
     "editorialSummary",
-    "socialMediaLinks",      # Instagram, Facebook, TikTok URLs from GBP
 ])
 
 # Fields for text search (lighter, cheaper)

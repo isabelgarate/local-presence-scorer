@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Generates actionable improvement recommendations from a scored business."""
+"""Genera recomendaciones de mejora a partir del score de un negocio."""
 
 from ..models.scores import TotalScore
 from ..models.recommendations import (
@@ -9,13 +9,10 @@ from ..models.recommendations import (
     RecommendationSet,
 )
 
-
 _THRESHOLDS = {
     "rating": 0.60,
     "reviews": 0.40,
     "completeness": 0.67,
-    "website": 0.5,
-    "instagram": None,  # special: handle absence
     "engagement": 0.40,
     "activity": 0.30,
 }
@@ -32,128 +29,127 @@ class RecommendationService:
                 recs.append(Recommendation(
                     area=RecommendationArea.RATING,
                     priority=Priority.HIGH,
-                    title="Improve your Google rating",
+                    title="Mejora tu valoración en Google",
                     description=(
-                        "Your current rating is below 4.0. Actively request reviews from satisfied "
-                        "customers after each interaction. Respond professionally to negative reviews."
+                        "Tu nota media está por debajo de 4.0. Pide reseñas a clientes satisfechos "
+                        "tras cada visita y responde con profesionalidad a las críticas negativas."
                     ),
-                    impact_estimate="+up to 20 pts on local score",
+                    impact_estimate="+hasta 20 pts en score local",
                 ))
 
             if ls.review_count_component < _THRESHOLDS["reviews"]:
                 recs.append(Recommendation(
                     area=RecommendationArea.REVIEWS,
                     priority=Priority.HIGH,
-                    title="Grow your review count",
+                    title="Consigue más reseñas en Google",
                     description=(
-                        "Businesses with more reviews rank higher and convert better. "
-                        "Share your Google Maps link with customers via WhatsApp or email."
+                        "Los negocios con más reseñas aparecen primero y generan más confianza. "
+                        "Comparte tu enlace de Google Maps con clientes por WhatsApp o email."
                     ),
-                    impact_estimate="+up to 15 pts on local score",
+                    impact_estimate="+hasta 15 pts en score local",
                 ))
 
             if ls.profile_completeness_component < _THRESHOLDS["completeness"]:
                 recs.append(Recommendation(
                     area=RecommendationArea.PROFILE_COMPLETENESS,
                     priority=Priority.MEDIUM,
-                    title="Complete your Google Business Profile",
+                    title="Completa tu perfil de Google Business",
                     description=(
-                        "Missing info: phone, opening hours, photos, or address. "
-                        "A complete profile increases trust and improves local ranking."
+                        "Faltan datos como teléfono, horario, fotos o dirección. "
+                        "Un perfil completo mejora el posicionamiento local y genera más confianza."
                     ),
-                    impact_estimate="+up to 8 pts on local score",
+                    impact_estimate="+hasta 8 pts en score local",
                 ))
 
             if ls.website_component == 0.0:
                 recs.append(Recommendation(
                     area=RecommendationArea.WEBSITE,
                     priority=Priority.MEDIUM,
-                    title="Add a website to your Google profile",
+                    title="Añade una web a tu perfil de Google",
                     description=(
-                        "Businesses with a website are perceived as more credible. "
-                        "Even a simple one-page site makes a difference."
+                        "Los negocios con web propia generan mucha más credibilidad. "
+                        "Incluso una página sencilla marca una gran diferencia."
                     ),
-                    impact_estimate="+5 pts on local score",
+                    impact_estimate="+5 pts en score local",
                 ))
 
-        # Social media recommendations
+        # Redes sociales
         if score.social_score is None:
             recs.append(Recommendation(
                 area=RecommendationArea.INSTAGRAM,
                 priority=Priority.MEDIUM,
-                title="Create profiles on Instagram, Facebook and TikTok",
+                title="Crea perfiles en Instagram, Facebook y TikTok",
                 description=(
-                    "No social media profiles were found for this business. "
-                    "A presence on Instagram, Facebook and TikTok significantly boosts visibility and trust."
+                    "No se encontraron perfiles en redes sociales para este negocio. "
+                    "La presencia social aumenta significativamente la visibilidad y la confianza."
                 ),
-                impact_estimate="+up to 35 pts on total score",
+                impact_estimate="+hasta 35 pts en score total",
             ))
         else:
             ss = score.social_score
-            platforms_found = ss.platforms_found
-            missing = [p for p in ("instagram", "facebook", "tiktok") if p not in platforms_found]
+            missing = [p for p in ("instagram", "facebook", "tiktok") if p not in ss.platforms_found]
 
             if missing:
+                nombres = {"instagram": "Instagram", "facebook": "Facebook", "tiktok": "TikTok"}
                 recs.append(Recommendation(
                     area=RecommendationArea.INSTAGRAM,
                     priority=Priority.MEDIUM,
-                    title=f"Create profiles on: {', '.join(missing)}",
+                    title=f"Crea perfil en: {', '.join(nombres[p] for p in missing)}",
                     description=(
-                        f"No profile found on {', '.join(missing)}. "
-                        "Each additional platform increases your reach and digital score."
+                        f"No se encontró perfil en {', '.join(nombres[p] for p in missing)}. "
+                        "Cada plataforma adicional amplía tu alcance y mejora tu score."
                     ),
-                    impact_estimate=f"+up to {len(missing) * 8} pts on social score",
+                    impact_estimate=f"+hasta {len(missing) * 8} pts en score social",
                 ))
 
             if ss.instagram and ss.instagram.follower_component < 0.20:
                 recs.append(Recommendation(
                     area=RecommendationArea.INSTAGRAM,
                     priority=Priority.MEDIUM,
-                    title="Grow your Instagram audience",
+                    title="Haz crecer tu audiencia en Instagram",
                     description=(
-                        "Your Instagram follower count is low. "
-                        "Post consistently, use local hashtags, and tag your location."
+                        "Tu número de seguidores en Instagram es bajo. "
+                        "Publica con regularidad, usa hashtags locales y etiqueta tu ubicación."
                     ),
-                    impact_estimate="+up to 10 pts on social score",
+                    impact_estimate="+hasta 10 pts en score social",
                 ))
 
             if ss.instagram and ss.instagram.engagement_component < _THRESHOLDS["engagement"]:
                 recs.append(Recommendation(
                     area=RecommendationArea.SOCIAL_ENGAGEMENT,
                     priority=Priority.LOW,
-                    title="Boost Instagram engagement",
+                    title="Mejora el engagement en Instagram",
                     description=(
-                        "Your engagement rate is below average. "
-                        "Use Stories polls, reply to comments quickly, and ask questions in captions."
+                        "Tu tasa de interacción está por debajo de la media. "
+                        "Usa encuestas en Stories, responde comentarios rápido y haz preguntas en los pies de foto."
                     ),
-                    impact_estimate="+up to 8 pts on social score",
+                    impact_estimate="+hasta 8 pts en score social",
                 ))
 
             if ss.tiktok and ss.tiktok.follower_component < 0.10:
                 recs.append(Recommendation(
                     area=RecommendationArea.CONTENT_ACTIVITY,
                     priority=Priority.LOW,
-                    title="Grow your TikTok presence",
+                    title="Potencia tu presencia en TikTok",
                     description=(
-                        "Your TikTok account has low reach. Short behind-the-scenes videos "
-                        "of local businesses perform very well — try posting 2-3 per week."
+                        "Tu cuenta de TikTok tiene poco alcance. Los vídeos cortos de negocios locales "
+                        "funcionan muy bien — intenta publicar 2-3 por semana."
                     ),
-                    impact_estimate="+up to 8 pts on social score",
+                    impact_estimate="+hasta 8 pts en score social",
                 ))
 
-        if score.activity_score and score.activity_score.posts_frequency_component < _THRESHOLDS["activity"]:
+        if score.activity_score and score.activity_score.total < _THRESHOLDS["activity"]:
             recs.append(Recommendation(
                 area=RecommendationArea.CONTENT_ACTIVITY,
                 priority=Priority.LOW,
-                title="Post more frequently",
+                title="Publica contenido con más frecuencia",
                 description=(
-                    "You posted fewer than 10 times in the last 30 days. "
-                    "Aim for 3–5 posts per week to stay visible in feeds and local searches."
+                    "La actividad reciente en redes es baja. "
+                    "Apunta a 3-5 publicaciones por semana para mantenerte visible."
                 ),
-                impact_estimate="+up to 6 pts on activity score",
+                impact_estimate="+hasta 6 pts en score de actividad",
             ))
 
-        # Sort: high → medium → low
         priority_order = {Priority.HIGH: 0, Priority.MEDIUM: 1, Priority.LOW: 2}
         recs.sort(key=lambda r: priority_order[r.priority])
 
