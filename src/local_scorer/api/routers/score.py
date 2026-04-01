@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ...models.business import ScoreRequest, BusinessProfile
+from ...models.business import ScoreRequest, BusinessProfile, SocialData
 from ...models.scores import TotalScore
 from ...models.recommendations import RecommendationSet
 from ...services.search_service import SearchService
@@ -16,6 +16,7 @@ router = APIRouter()
 
 class ScoreResponse(BaseModel):
     profile: BusinessProfile
+    social: SocialData
     score: TotalScore
     recommendations: RecommendationSet
 
@@ -33,10 +34,10 @@ async def score_business(
     result = await service.score_business(
         name=request.name,
         location=request.location,
-        include_instagram=request.include_instagram,
+        include_social=request.include_social,
     )
     if result is None:
         raise HTTPException(status_code=404, detail=f"Business '{request.name}' not found in '{request.location}'")
 
     recommendations = rec_service.generate(result.score)
-    return ScoreResponse(profile=result.profile, score=result.score, recommendations=recommendations)
+    return ScoreResponse(profile=result.profile, social=result.social, score=result.score, recommendations=recommendations)

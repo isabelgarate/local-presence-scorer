@@ -35,7 +35,7 @@ async def search_businesses(
         query=request.query,
         location=request.location,
         max_results=request.max_results,
-        include_instagram=False,
+        include_social=False,
     )
     return [
         SearchResultItem(

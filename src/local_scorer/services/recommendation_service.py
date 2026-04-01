@@ -76,39 +76,67 @@ class RecommendationService:
                     impact_estimate="+5 pts on local score",
                 ))
 
-        # Instagram / social
+        # Social media recommendations
         if score.social_score is None:
             recs.append(Recommendation(
                 area=RecommendationArea.INSTAGRAM,
                 priority=Priority.MEDIUM,
-                title="Create or link your Instagram account",
+                title="Create profiles on Instagram, Facebook and TikTok",
                 description=(
-                    "No Instagram profile was found for this business. "
-                    "Social presence directly boosts visibility and customer trust."
+                    "No social media profiles were found for this business. "
+                    "A presence on Instagram, Facebook and TikTok significantly boosts visibility and trust."
                 ),
                 impact_estimate="+up to 35 pts on total score",
             ))
         else:
             ss = score.social_score
-            if ss.follower_component < 0.20:
+            platforms_found = ss.platforms_found
+            missing = [p for p in ("instagram", "facebook", "tiktok") if p not in platforms_found]
+
+            if missing:
+                recs.append(Recommendation(
+                    area=RecommendationArea.INSTAGRAM,
+                    priority=Priority.MEDIUM,
+                    title=f"Create profiles on: {', '.join(missing)}",
+                    description=(
+                        f"No profile found on {', '.join(missing)}. "
+                        "Each additional platform increases your reach and digital score."
+                    ),
+                    impact_estimate=f"+up to {len(missing) * 8} pts on social score",
+                ))
+
+            if ss.instagram and ss.instagram.follower_component < 0.20:
                 recs.append(Recommendation(
                     area=RecommendationArea.INSTAGRAM,
                     priority=Priority.MEDIUM,
                     title="Grow your Instagram audience",
                     description=(
-                        "Your follower count is relatively low. "
+                        "Your Instagram follower count is low. "
                         "Post consistently, use local hashtags, and tag your location."
                     ),
                     impact_estimate="+up to 10 pts on social score",
                 ))
-            if ss.engagement_rate_component < _THRESHOLDS["engagement"]:
+
+            if ss.instagram and ss.instagram.engagement_component < _THRESHOLDS["engagement"]:
                 recs.append(Recommendation(
                     area=RecommendationArea.SOCIAL_ENGAGEMENT,
                     priority=Priority.LOW,
-                    title="Boost engagement on Instagram",
+                    title="Boost Instagram engagement",
                     description=(
-                        "Your engagement rate (likes + comments / followers) is below average. "
-                        "Ask questions in captions, use Stories polls, and reply to comments quickly."
+                        "Your engagement rate is below average. "
+                        "Use Stories polls, reply to comments quickly, and ask questions in captions."
+                    ),
+                    impact_estimate="+up to 8 pts on social score",
+                ))
+
+            if ss.tiktok and ss.tiktok.follower_component < 0.10:
+                recs.append(Recommendation(
+                    area=RecommendationArea.CONTENT_ACTIVITY,
+                    priority=Priority.LOW,
+                    title="Grow your TikTok presence",
+                    description=(
+                        "Your TikTok account has low reach. Short behind-the-scenes videos "
+                        "of local businesses perform very well — try posting 2-3 per week."
                     ),
                     impact_estimate="+up to 8 pts on social score",
                 ))

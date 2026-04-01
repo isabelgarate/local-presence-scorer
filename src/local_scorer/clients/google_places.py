@@ -65,16 +65,27 @@ class GooglePlacesClient:
         query: str,
         location_bias: str | None = None,
         max_results: int = 5,
+        lat: float | None = None,
+        lng: float | None = None,
+        radius_meters: float = 1000.0,
     ) -> list[BusinessProfile]:
-        """Search for businesses using free-text query."""
+        """Search for businesses using free-text query.
+
+        If lat/lng are provided, biases results to that location within radius_meters.
+        """
         body: dict[str, Any] = {
             "textQuery": query,
             "maxResultCount": min(max_results, 20),
             "languageCode": "es",
         }
-        if location_bias:
-            # Location bias as a text string — Google geocodes it
-            body["locationBias"] = {"circle": {"center": {"text": location_bias}, "radius": 50000.0}}
+        if lat is not None and lng is not None:
+            body["locationBias"] = {
+                "circle": {
+                    "center": {"latitude": lat, "longitude": lng},
+                    "radius": radius_meters,
+                }
+            }
+        # Otherwise location is embedded in the query string ("X in Madrid")
 
         response = await self._client.post(
             "/v1/places:searchText",

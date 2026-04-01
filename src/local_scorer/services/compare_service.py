@@ -6,6 +6,8 @@ import logging
 
 from ..clients.google_places import GooglePlacesClient
 from ..clients.instagram import InstagramClient
+from ..clients.facebook import FacebookClient
+from ..clients.tiktok import TikTokClient
 from .search_service import SearchService, ScoredBusiness
 
 logger = logging.getLogger(__name__)
@@ -16,17 +18,19 @@ class CompareService:
         self,
         places_client: GooglePlacesClient,
         instagram_client: InstagramClient | None = None,
+        facebook_client: FacebookClient | None = None,
+        tiktok_client: TikTokClient | None = None,
     ) -> None:
-        self._service = SearchService(places_client, instagram_client)
+        self._service = SearchService(places_client, instagram_client, facebook_client, tiktok_client)
 
     async def compare(
         self,
         businesses: list[tuple[str, str]],  # list of (name, location)
-        include_instagram: bool = True,
+        include_social: bool = True,
     ) -> list[ScoredBusiness]:
         """Score all businesses concurrently, return sorted by total score descending."""
         tasks = [
-            self._service.score_business(name, location, include_instagram)
+            self._service.score_business(name, location, include_social)
             for name, location in businesses
         ]
         results_raw = await asyncio.gather(*tasks, return_exceptions=True)

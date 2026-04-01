@@ -60,6 +60,8 @@ class TestSearchEndpoint:
         respx.post("https://places.googleapis.com/v1/places:searchText").mock(
             return_value=httpx.Response(200, json=MOCK_TEXT_SEARCH)
         )
+        # Block any unexpected requests
+        respx.route(url__regex=r".*latrattoria.*").mock(return_value=httpx.Response(404))
 
         response = client.post("/api/v1/search", json={
             "query": "italian restaurant",
@@ -91,10 +93,13 @@ class TestScoreEndpoint:
             return_value=httpx.Response(200, json=MOCK_PLACE_DETAILS)
         )
 
+        # Mock website scrape (social resolver tier 2)
+        respx.get("https://latrattoria-test.es/").mock(return_value=httpx.Response(200, text="<html></html>"))
+
         response = client.post("/api/v1/score", json={
             "name": "La Trattoria",
             "location": "Madrid",
-            "include_instagram": False,
+            "include_social": False,
         })
         assert response.status_code == 200
         data = response.json()
@@ -111,7 +116,7 @@ class TestScoreEndpoint:
         response = client.post("/api/v1/score", json={
             "name": "Nonexistent Business XYZ",
             "location": "Mars",
-            "include_instagram": False,
+            "include_social": False,
         })
         assert response.status_code == 404
 
@@ -127,12 +132,15 @@ class TestCompareEndpoint:
             return_value=httpx.Response(200, json=MOCK_PLACE_DETAILS)
         )
 
+        # Mock website scrapes
+        respx.get(url__regex=r"https://latrattoria.*").mock(return_value=httpx.Response(200, text="<html></html>"))
+
         response = client.post("/api/v1/compare", json={
             "businesses": [
                 {"name": "La Trattoria", "location": "Madrid"},
                 {"name": "Ristorante Roma", "location": "Madrid"},
             ],
-            "include_instagram": False,
+            "include_social": False,
         })
         assert response.status_code == 200
         data = response.json()

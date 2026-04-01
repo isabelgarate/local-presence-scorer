@@ -31,7 +31,7 @@ async def compare_businesses(
     Score and rank multiple businesses. Returns sorted by total score (highest first).
     """
     pairs = [(b.name, b.location) for b in request.businesses]
-    results = await service.compare(pairs, include_instagram=request.include_instagram)
+    results = await service.compare(pairs, include_social=request.include_social)
 
     return [
         CompareResultItem(

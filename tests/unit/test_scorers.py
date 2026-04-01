@@ -2,7 +2,7 @@
 
 import pytest
 
-from local_scorer.models.business import BusinessProfile, InstagramData
+from local_scorer.models.business import BusinessProfile, InstagramData, SocialData
 from local_scorer.scorers.local_scorer import LocalScorer
 from local_scorer.scorers.social_scorer import SocialScorer
 from local_scorer.scorers.total_scorer import TotalScorer
@@ -82,21 +82,25 @@ class TestLocalScorer:
 class TestSocialScorer:
     def test_social_score(self, instagram_data):
         scorer = SocialScorer()
-        result = scorer.score_social(instagram_data)
-        assert 0.0 < result.total < 1.0
-        assert result.follower_component > 0.0
+        social_data = SocialData(instagram=instagram_data)
+        social, activity = scorer.score(social_data)
+        assert social.instagram is not None
+        assert 0.0 < social.total < 1.0
+        assert social.instagram.follower_component > 0.0
 
     def test_activity_score(self, instagram_data):
         scorer = SocialScorer()
-        result = scorer.score_activity(instagram_data)
-        assert result.posts_frequency_component == pytest.approx(12 / 30)
-        assert result.reels_component == pytest.approx(4 / 10)
+        social_data = SocialData(instagram=instagram_data)
+        _, activity = scorer.score(social_data)
+        assert activity.instagram_posts_component == pytest.approx(12 / 30)
+        assert activity.instagram_reels_component == pytest.approx(4 / 10)
 
     def test_zero_followers(self):
         scorer = SocialScorer()
         data = InstagramData(handle="test", followers=0)
-        result = scorer.score_social(data)
-        assert result.total == 0.0
+        social_data = SocialData(instagram=data)
+        social, _ = scorer.score(social_data)
+        assert social.total == 0.0
 
 
 class TestTotalScorer:
@@ -106,8 +110,7 @@ class TestTotalScorer:
         total_scorer = TotalScorer()
 
         local = local_scorer.score(full_profile, query="italian")
-        social = social_scorer.score_social(instagram_data)
-        activity = social_scorer.score_activity(instagram_data)
+        social, activity = social_scorer.score(SocialData(instagram=instagram_data))
 
         result = total_scorer.score("abc123", "La Trattoria", local, social, activity)
 

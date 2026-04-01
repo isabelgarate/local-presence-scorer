@@ -88,3 +88,10 @@ def normalize_posts_frequency(posts_last_30_days: int, cap: int = 30) -> float:
 def normalize_reels(reels_last_30_days: int, cap: int = 10) -> float:
     """Linear: cap reels/30d → 1.0."""
     return min(1.0, reels_last_30_days / cap)
+
+
+def normalize_video_views(avg_views: float, cap: float = 10_000.0) -> float:
+    """Log-scale: avg video views (TikTok). cap views → 1.0."""
+    if avg_views <= 0:
+        return 0.0
+    return min(1.0, math.log(1 + avg_views) / math.log(1 + cap))

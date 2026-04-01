@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ..config import settings
-from .routers import health, search, score, compare
+from .routers import health, search, score, compare, nearby
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -57,6 +57,7 @@ def create_app() -> FastAPI:
     app.include_router(search.router, prefix=prefix, tags=["search"])
     app.include_router(score.router, prefix=prefix, tags=["score"])
     app.include_router(compare.router, prefix=prefix, tags=["compare"])
+    app.include_router(nearby.router, prefix=prefix, tags=["nearby"])
 
     return app
 
