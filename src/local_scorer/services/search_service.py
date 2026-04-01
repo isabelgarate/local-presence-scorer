@@ -102,22 +102,19 @@ class SearchService:
         return ScoredBusiness(profile=profile, social=social_data, score=total)
 
     async def _enrich_social(self, profile: BusinessProfile) -> SocialData:
-        """Resolve handles and fetch data from all available social platforms."""
-        handles = await self._resolver.resolve_all(
-            name=profile.name,
-            website=profile.website,
-        )
+        """Resolve handles (from GBP or website) and fetch data from all social platforms."""
+        handles = await self._resolver.resolve_all(profile)
 
         ig_handle, ig_conf = handles["instagram"]
         fb_handle, fb_conf = handles["facebook"]
         tt_handle, tt_conf = handles["tiktok"]
 
-        # Only use heuristic handles (confidence 0.3) if confidence is > 0
-        if ig_handle and ig_conf > 0:
+        # Update profile with resolved handles
+        if ig_handle:
             profile.instagram_handle = ig_handle
-        if fb_handle and fb_conf > 0:
+        if fb_handle:
             profile.facebook_handle = fb_handle
-        if tt_handle and tt_conf > 0:
+        if tt_handle:
             profile.tiktok_handle = tt_handle
 
         profile.social_resolution_confidence = max(ig_conf, fb_conf, tt_conf)

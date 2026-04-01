@@ -31,6 +31,7 @@ PLACE_DETAILS_FIELDS = ",".join([
     "businessStatus",
     "location",
     "editorialSummary",
+    "socialMediaLinks",      # Instagram, Facebook, TikTok URLs from GBP
 ])
 
 # Fields for text search (lighter, cheaper)
@@ -131,6 +132,12 @@ class GooglePlacesClient:
         )
         types = data.get("types", [])
 
+        # Extract social handles directly from GBP social media links
+        ig_handle, fb_handle, tt_handle = self._parse_social_links(
+            data.get("socialMediaLinks", []),
+            data.get("websiteUri", ""),
+        )
+
         return BusinessProfile(
             place_id=place_id,
             name=data.get("displayName", {}).get("text", "") if isinstance(data.get("displayName"), dict) else data.get("displayName", ""),
@@ -146,4 +153,47 @@ class GooglePlacesClient:
             business_status=data.get("businessStatus"),
             latitude=location.get("latitude"),
             longitude=location.get("longitude"),
+            instagram_handle=ig_handle,
+            facebook_handle=fb_handle,
+            tiktok_handle=tt_handle,
+            social_resolution_confidence=1.0 if any([ig_handle, fb_handle, tt_handle]) else 0.0,
         )
+
+    def _parse_social_links(
+        self,
+        social_links: list[dict[str, Any]],
+        website_uri: str,
+    ) -> tuple[str | None, str | None, str | None]:
+        """Extract Instagram, Facebook and TikTok handles from GBP social media links."""
+        import re
+        _IG = re.compile(r"instagram\.com/([A-Za-z0-9_.]{1,30})/?", re.I)
+        _FB = re.compile(r"facebook\.com/([A-Za-z0-9_./-]{1,80})/?", re.I)
+        _TT = re.compile(r"tiktok\.com/@([A-Za-z0-9_.]{1,30})/?", re.I)
+
+        ig = fb = tt = None
+
+        all_urls = [link.get("uri", "") for link in social_links]
+        # Also check the website URI itself (some businesses link Instagram as their site)
+        if website_uri:
+            all_urls.append(website_uri)
+
+        for url in all_urls:
+            if not ig:
+                m = _IG.search(url)
+                if m and m.group(1).lower() not in {"p", "explore", "reel", "reels", "stories"}:
+                    ig = m.group(1).rstrip("/")
+            if not fb:
+                m = _FB.search(url)
+                if m:
+                    seg = m.group(1).split("/")[0].lower()
+                    if seg not in {"pages", "groups", "events", "login", "sharer", "share"}:
+                        fb = m.group(1).rstrip("/")
+            if not tt:
+                m = _TT.search(url)
+                if m and m.group(1).lower() not in {"discover", "trending"}:
+                    tt = m.group(1).rstrip("/")
+
+        if ig or fb or tt:
+            logger.debug("GBP social links found — ig=%s fb=%s tt=%s", ig, fb, tt)
+
+        return ig, fb, tt
